@@ -7,11 +7,24 @@ from .serializers import LeaderboardEntrySerializer
 # POST: Submit Score
 class SubmitScoreView(APIView):
     def post(self, request):
-        serializer = LeaderboardEntrySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        name = request.data.get('name')
+        score = request.data.get('score')
+
+        try:
+            entry = LeaderboardEntry.objects.get(name=name)
+            if score > entry.score:
+                entry.score = score  # Always update to the latest score
+            entry.save()
+            serializer = LeaderboardEntrySerializer(entry)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except LeaderboardEntry.DoesNotExist:
+            # Create new entry if user does not exist
+            serializer = LeaderboardEntrySerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # GET: Fetch Leaderboard
 class LeaderboardView(APIView):
@@ -19,12 +32,6 @@ class LeaderboardView(APIView):
         entries = LeaderboardEntry.objects.all().order_by('-score')[:10]  # Top 10 scores
         serializer = LeaderboardEntrySerializer(entries, many=True)
         return Response(serializer.data)
-
-# POST: Check Username Availability
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import LeaderboardEntry
 
 class UsernameCheckView(APIView):
     def post(self, request):
