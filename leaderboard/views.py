@@ -21,6 +21,11 @@ class LeaderboardView(APIView):
         return Response(serializer.data)
 
 # POST: Check Username Availability
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import LeaderboardEntry
+
 class UsernameCheckView(APIView):
     def post(self, request):
         username = request.data.get('name', None)
@@ -31,3 +36,4 @@ class UsernameCheckView(APIView):
             return Response({'available': False, 'message': 'Username already taken.'})
         else:
             return Response({'available': True, 'message': 'Username is available.'})
+
